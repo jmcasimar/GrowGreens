@@ -75,10 +75,16 @@ solutionMaker::solutionMaker(
     // Define relay pin
     __Relay1 = relay1;
     __RelayState = LOW;
-    
+
+    // Define servo motors
+    SolutionServo[0] = new Servo;
+    SolutionServo[1] = new Servo;
+    SolutionServo[2] = new Servo;
+    SolutionServo[3] = new Servo;
+
     // At boot solution not ready
     SolFinished = false;
-    
+
     // Default parameters
     for(int i=0; i<MAX_SOLUTIONS_NUMBER+MAX_PUMPS_NUMBER;i++){
       __IsEnable[i] = false;
@@ -126,6 +132,10 @@ solutionMaker::solutionMaker(
   }
 
 void solutionMaker::begin(
+  uint8_t SolutionServo1,
+  uint8_t SolutionServo2,
+  uint8_t SolutionServo3,
+  uint8_t SolutionServo4,
   uint8_t steps_per_rev = MOTOR_STEP_PER_REV,
   uint8_t microStep = DEFAULT_MICROSTEP,
   uint8_t pump_velocity = PUMP_VELOCITY,
@@ -175,6 +185,16 @@ void solutionMaker::begin(
         */
         stepperS[i]->setPinsInverted(true,false,false);
       }
+
+      SolutionServo[0]->attach(SolutionServo1);
+      SolutionServo[1]->attach(SolutionServo2);
+      SolutionServo[2]->attach(SolutionServo3);
+      SolutionServo[3]->attach(SolutionServo4);
+
+      SolutionServo[0]->write(0);
+      SolutionServo[1]->write(0);
+      SolutionServo[2]->write(0);
+      SolutionServo[3]->write(0);
 
       for(int i=0; i<MAX_PUMPS_NUMBER*2; i++){
         pinMode(__Motor[i], OUTPUT);
@@ -410,10 +430,10 @@ void solutionMaker::printAction(String act, uint8_t actuator, uint8_t level=0)
     else if(level==1){ Serial.print(F("info,")); } // Info
     else if(level==2){ Serial.print(F("warning,")); } // Warning
     else if(level==3){ Serial.print(F("error,")); } // Error
-    else if(level==4){ Serial.print(F("critical,")); } // Error 
-     
+    else if(level==4){ Serial.print(F("critical,")); } // Error
+
     Serial.print(F("Solution Maker ("));
-    
+
     if(actuator==0){Serial.print(F("Motor 1"));}
     else if(actuator==1){Serial.print(F("Motor 2"));}
     else if(actuator==2){Serial.print(F("Motor 3"));}
@@ -421,7 +441,7 @@ void solutionMaker::printAction(String act, uint8_t actuator, uint8_t level=0)
     else if(actuator==4){Serial.print(F("Pump 1"));}
     else if(actuator==5){Serial.print(F("Pump 2"));}
     else{Serial.print(F("Actuator does not match"));}
-    
+
     Serial.print(F("):\t"));
     Serial.println(act);
   }
@@ -431,14 +451,14 @@ void solutionMaker::printEZOAction(String act, uint8_t sensorType, uint8_t level
     else if(level==1){ Serial.print(F("info,")); } // Info
     else if(level==2){ Serial.print(F("warning,")); } // Warning
     else if(level==3){ Serial.print(F("error,")); } // Error
-    else if(level==4){ Serial.print(F("critical,")); } // Error 
-    
+    else if(level==4){ Serial.print(F("critical,")); } // Error
+
     Serial.print(F("Solution Maker (EZO "));
-    
+
     if(sensorType==EZO_PH){Serial.print(F("PH"));}
     else if(sensorType==EZO_EC){Serial.print(F("EC"));}
     else{Serial.print(F("Unkwown"));}
- 
+
     Serial.print(F(" Sensor): "));
     Serial.println(act);
   }
@@ -964,4 +984,3 @@ void solutionMaker::prepareSolution(float liters, uint8_t sol, float ph, float e
     }
     else{Serial.println(F("error,Solution Maker: Working on another solution, please wait"));}
   }
-  

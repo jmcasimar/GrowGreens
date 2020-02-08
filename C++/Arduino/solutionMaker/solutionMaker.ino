@@ -51,10 +51,10 @@ void serialEvent();
 
 void setup() {
   Serial.begin(115200);
-  sMaker.begin();
+  sMaker.begin(28,30,32,34); //Argumentos 1,2,3,4 pins for servo control
   read_EEPROM(HIGH); // Charge calibration parameters
 }
 
 void loop() {
-  sMaker.run();  
+  sMaker.run();
 }

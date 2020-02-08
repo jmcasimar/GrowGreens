@@ -41,6 +41,7 @@ along with Grow.  If not, see <https://www.gnu.org/licenses/>.
 #include <DallasTemperature.h> // For temperature sensor
 #include <EZO.h> // For Atlas Scientific sensors
 #include <math.h> // For ph/conductivity equations
+#include <Servo.h>
 
 #define MAX_SOLUTIONS_NUMBER 4 // The max number of motors that can be dispense
 #define MAX_PUMPS_NUMBER 2 // The max number of peristaltic pumps
@@ -100,7 +101,7 @@ class solutionMaker
         bool           __StatusLCD; // Variable to know if the screen is on/off
         bool           __LCDLightOn; // Variable to turn off the LCD light
         bool           __RelayState; // Variable to hold the state of the relay
-        
+
         // Atlas Scientific Sensors variables
         float __pH, __eC; // Variables to hold the phMeter and ecMeter values
         // Variable to know if some Atlas Scientific Sensor is exporting its calibration parameters
@@ -125,6 +126,8 @@ class solutionMaker
         OneWire *ourWire; // Pointer to Wire Object
         DallasTemperature *tempSensor; // Pointer to temperature sensor
         LiquidCrystal_I2C *lcd; // Pointer to control LCD screen
+        Servo *SolutionServo[MAX_SOLUTIONS_NUMBER];
+
 
         bool isWorking(); // Returns true if some actuator is unavailable, else false
         void enable(uint8_t actuator); // Enable/Disable the actuator
@@ -168,7 +171,7 @@ class solutionMaker
 
     public:
         bool SolFinished; // Variable to know if the last Solution request finished
-        
+
         // Constructor. Dir, Step and Enable Pins for all the motors
         solutionMaker(
           uint8_t dirS1,
@@ -204,6 +207,10 @@ class solutionMaker
 
          // Init the object with default configuration
         void begin(
+          uint8_t SolutionServo1,
+          uint8_t SolutionServo2,
+          uint8_t SolutionServo3,
+          uint8_t SolutionServo4,
           uint8_t steps_per_rev = MOTOR_STEP_PER_REV,
           uint8_t microStep = DEFAULT_MICROSTEP,
           uint8_t pump_velocity = PUMP_VELOCITY,
