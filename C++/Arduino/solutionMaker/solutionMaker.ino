@@ -30,7 +30,7 @@ solutionMaker sMaker(
           40, // LedWorking
           22, // Temperature sensor
           24, // LCD button
-          9 // Relay (motor or actuator to get the solution disolve)
+          9  // Relay (motor or actuator to get the solution disolve)
         );
 
 // Serial comunication
@@ -38,7 +38,8 @@ String inputstring = "";
 bool input_string_complete = false;
 
 // Aux Variables
-bool show = true;
+bool show = false;
+unsigned long contador;
 
 /*** Name Functions ***/
 // EEPROM
@@ -51,10 +52,15 @@ void serialEvent();
 
 void setup() {
   Serial.begin(115200);
-  sMaker.begin(28,30,32,34); //Argumentos 1,2,3,4 pins for servo control
+  sMaker.begin(); //Argumentos 1,2,3,4 pins for servo control
   read_EEPROM(HIGH); // Charge calibration parameters
 }
 
 void loop() {
   sMaker.run();
+  /*
+  if (millis()-contador  >2000){
+    Serial.println(sMaker.EZOisEnable(1));
+    contador=millis();
+  }*/
 }

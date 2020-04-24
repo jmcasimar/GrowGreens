@@ -45,11 +45,11 @@ along with Grow.  If not, see <https://www.gnu.org/licenses/>.
 
 #define MAX_SOLUTIONS_NUMBER 4 // The max number of motors that can be dispense
 #define MAX_PUMPS_NUMBER 2 // The max number of peristaltic pumps
-#define MOTOR_SPEED 250 // Maximum Steps Per Second
-#define MOTOR_ACCEL 250 // Steps/second/Second of acceleration
+#define MOTOR_SPEED 4000 // Maximum Steps Per Second
+#define MOTOR_ACCEL 1000 // Steps/second/Second of acceleration
 #define DEFAULT_MICROSTEP 8 // By default we use configuration of 1/8 microSteps
 #define MOTOR_STEP_PER_REV 200 // By default we use motors of 200 steps/rev
-#define PUMP_VELOCITY 155 // Value pwm -> 255 = 100%, 155 = 60% of the maximun velocity.
+#define PUMP_VELOCITY 255 // Value pwm -> 255 = 100%, 155 = 60% of the maximun velocity.
 // Less than 155(60%) may not work
 #define LCD_I2C_DIR 0x27 // Direction for screen
 #define LCD_COLUMNS 20 // Screen columns number
@@ -207,10 +207,8 @@ class solutionMaker
 
          // Init the object with default configuration
         void begin(
-          uint8_t SolutionServo1,
-          uint8_t SolutionServo2,
-          uint8_t SolutionServo3,
-          uint8_t SolutionServo4,
+          uint8_t SolutionServo1=26,
+          uint8_t SolutionServo2=28,
           uint8_t steps_per_rev = MOTOR_STEP_PER_REV,
           uint8_t microStep = DEFAULT_MICROSTEP,
           uint8_t pump_velocity = PUMP_VELOCITY,

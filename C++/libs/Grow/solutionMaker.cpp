@@ -37,7 +37,7 @@ solutionMaker::solutionMaker(
   uint8_t tempSens,
   uint8_t lcdButton,
   uint8_t relay1
-  ){
+){
     // Define motors pins
     __DirS[0] = dirS1;
     __StepS[0] = stepS1;
@@ -132,10 +132,8 @@ solutionMaker::solutionMaker(
   }
 
 void solutionMaker::begin(
-  uint8_t SolutionServo1,
-  uint8_t SolutionServo2,
-  uint8_t SolutionServo3,
-  uint8_t SolutionServo4,
+  uint8_t SolutionServo1 = 26,
+  uint8_t SolutionServo2 = 28,
   uint8_t steps_per_rev = MOTOR_STEP_PER_REV,
   uint8_t microStep = DEFAULT_MICROSTEP,
   uint8_t pump_velocity = PUMP_VELOCITY,
@@ -186,15 +184,6 @@ void solutionMaker::begin(
         stepperS[i]->setPinsInverted(true,false,false);
       }
 
-      SolutionServo[0]->attach(SolutionServo1);
-      SolutionServo[1]->attach(SolutionServo2);
-      SolutionServo[2]->attach(SolutionServo3);
-      SolutionServo[3]->attach(SolutionServo4);
-
-      SolutionServo[0]->write(0);
-      SolutionServo[1]->write(0);
-      SolutionServo[2]->write(0);
-      SolutionServo[3]->write(0);
 
       for(int i=0; i<MAX_PUMPS_NUMBER*2; i++){
         pinMode(__Motor[i], OUTPUT);
@@ -353,6 +342,9 @@ unsigned long solutionMaker::MLToTime(float mililiters, uint8_t pump)
 long solutionMaker::RevToMG(long rev, uint8_t st)
   { if(rev>0 && st<MAX_SOLUTIONS_NUMBER){
       float mgPerRev = float(__Calibration[st])*40; // mg/rev
+      if (st==3){
+        mgPerRev = mgPerRev*149/40; // big endless screw requires this modifications for eeprom save
+      }
       return (rev*mgPerRev);
     }
     return -1;
@@ -565,6 +557,10 @@ void solutionMaker::relayControl()
       __RelayState = LOW;
       __RelayTime = millis();
       Serial.println(F("warning,Solution Maker: 15 seconds to finish the solution"));
+      SolutionServo[0]->detach();
+      SolutionServo[1]->detach();
+      SolutionServo[2]->detach();
+      SolutionServo[3]->detach();
     }
     else if(!digitalRead(__Relay1) && !__RelayState && !__Work && millis()-__RelayTime>RELAY_ACTION_TIME){
       digitalWrite(__Relay1, !__RelayState);
@@ -940,24 +936,40 @@ void solutionMaker::prepareSolution(float liters, uint8_t sol, float ph, float e
 
         switch(sol){
           case 0: // Solution 1
+            SolutionServo[0]->attach(26);
+            SolutionServo[1]->attach(28);
+            SolutionServo[0]->write(0);
+            SolutionServo[1]->write(0);
             mgPowder = balanceEC(__eC, ec, liters, sol);
             if(mgPowder!=-1 && mgPowder>0) dispense(long(mgPowder), sol);
             mlAcid = balancePH(__pH, ph, liters, 0); // Solution 1 -> Acid 1
             if(mlAcid!=-1 && mlAcid>0) dispenseAcid(mlAcid, 0);
             break;
           case 1: // Solution 2
+          SolutionServo[0]->attach(26);
+          SolutionServo[1]->attach(28);
+          SolutionServo[0]->write(0);
+          SolutionServo[1]->write(0);
             mgPowder = balanceEC(__eC, ec, liters, sol);
             if(mgPowder!=-1 && mgPowder>0) dispense(long(mgPowder), sol);
             mlAcid = balancePH(__pH, ph, liters, 0); // Solution 2 -> Acid 1
             if(mlAcid!=-1 && mlAcid>0) dispenseAcid(mlAcid, 0);
             break;
           case 2: // Solution 3
+          SolutionServo[0]->attach(26);
+          SolutionServo[1]->attach(28);
+          SolutionServo[0]->write(0);
+          SolutionServo[1]->write(0);
             mgPowder = balanceEC(__eC, ec, liters, sol);
             if(mgPowder!=-1 && mgPowder>0) dispense(long(mgPowder), sol);
             mlAcid = balancePH(__pH, ph, liters, 1); // Solution 3 -> Acid 2
             if(mlAcid!=-1 && mlAcid>0) dispenseAcid(mlAcid, 1);
             break;
           case 3: // Solution 4
+          SolutionServo[0]->attach(26);
+          SolutionServo[1]->attach(28);
+          SolutionServo[0]->write(0);
+          SolutionServo[1]->write(0);
             mgPowder = balanceEC(__eC, ec, liters, sol);
             if(mgPowder!=-1 && mgPowder>0) dispense(long(mgPowder), sol);
             mlAcid = balancePH(__pH, ph, liters, 1); // Solution 4 -> Acid 2
