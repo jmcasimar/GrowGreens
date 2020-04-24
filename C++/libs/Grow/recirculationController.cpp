@@ -20,7 +20,7 @@ recirculationController::recirculationController() // Constructor
     __Fh2o = LOW; __FSol = LOW;
     __FPump = LOW;
     __Rh2o = LOW; __RSol = LOW;
-    
+
     /*** Default Aux Variables ***/
     __In = 0; __Out = 0;
     __LastOut = 0;
@@ -41,13 +41,23 @@ recirculationController::recirculationController() // Constructor
     for(int i=0; i<MAX_NUMBER_US_SENSOR; i++){
       __Level[i] = NULL;
     }
+
+    // Alerts disable by default
+    __alertRecirculation = LOW;
+    __alertFlowSensor = LOW; __alertLevelSensor = LOW;
+    __alertPumpIn = 0; __alertPumpOut = 0; __alertSolPump = 0;
+    __CompareInVol = 0; __CompareOutVol = 0;
+    __CompareSolVol = 0; __CompareH2OVol = 0;
+    for(int i=0; i<MAX_NUMBER_US_SENSOR; i++){
+      __CompareLevel[i] = 0;
+    }
   }
 
 void recirculationController::countPulses()
   {  __NumPulses++; }
 
 void recirculationController::getVolume()
-  { if(millis()-__ActualTime>1000){
+  { if(__ActualTime-millis()>1000){
       __ActualTime = millis();
       noInterrupts(); // Disable Interrupts
       float newVolume = __NumPulses/(60*__K);
@@ -111,7 +121,7 @@ void recirculationController::begin(
     __Level[5] = &level5;
     __Level[6] = &level6;
     __ActualTime = millis();
-    __PrintTimer = millis();
+    __AlertTime = millis();
   }
 
 void recirculationController::flowSensorBegin()
@@ -148,7 +158,7 @@ bool recirculationController::getFSolValve()
 
 bool recirculationController::getFPump()
   { return __FPump; }
-  
+
 bool recirculationController::getRH2OValve()
   { return __Rh2o; }
 
@@ -159,12 +169,12 @@ void recirculationController::releaseKegs(bool nut)
   { if(nut){ __RSol = HIGH; }
     else{ __Rh2o = HIGH; }
   }
-  
+
 void recirculationController::finishRelease(bool nut)
   { if(nut){ __RSol = LOW; }
     else{ __Rh2o = LOW; }
   }
-  
+
 bool recirculationController::setIn(uint8_t solution)
   { if(solution>=0 && solution<MAX_RECIRCULATION_TANK){
       __In = solution;
@@ -235,7 +245,7 @@ void recirculationController::resetVolKnut()
 
 void recirculationController::resetVolKh2o()
   { __VolKh2o = 0; }
-  
+
 void recirculationController::fillH2O(float liters)
   { if(!__FSol){
       if(!__Fh2o){
@@ -284,10 +294,7 @@ bool recirculationController::moveIn()
         // There is not release valve installed yet, not use rigth now
         // __InPump = HIGH;
         // __ReleaseValve = HIGH;
-        if (millis()-__PrintTimer>1000){
-          __PrintTimer = millis();
-          printAction(F("Releasing water outside the system"), 3);
-        } 
+        printAction(F("Releasing water outside the system"), 3);
       }
       return true;
     }
@@ -300,7 +307,7 @@ uint8_t recirculationController::moveOut(float liters, uint8_t to_Where)
       if(to_Where>=0 && to_Where<MAX_RECIRCULATION_DESTINATIONS){
         __ActualLiters = __Level[__Out+1]->getVolume()-__Level[__Out+1]->getMinVolume();
         __LastOut = __Out;
-  
+
         if(__ActualLiters>liters){ // If there are enough solution
           __OutLiters = liters;
           __OutPump = HIGH;
@@ -323,7 +330,7 @@ uint8_t recirculationController::moveOut(float liters, uint8_t to_Where)
         else{
           printAction(F("There are not enough solution"), 0);
           liters = liters*1.15; // Add or prepare 15% extra water
-          
+
           if(to_Where==NUTRITION_KEGS || to_Where==SOLUTION_MAKER){ // Nutrition Kegs || Solution Maker
             // Move to Solution Maker
             __OutLiters = __ActualLiters;
@@ -378,7 +385,7 @@ void recirculationController::updateState()
   { float h2oLiters = 0; // how many liters missed to move to water kegs
     float nutLiters = 0; // how many liters missed to move to nutrition kegs
     float sMLiters = 0; // how many liters missed to move to sMaker
-    
+
     // OutPump volume require
     if(__OutPump && __Go[WATER_KEGS]){
       h2oLiters += __OutLiters-(__ActualLiters-(__Level[__LastOut+1]->getVolume()-__Level[__LastOut+1]->getMinVolume()));
@@ -407,12 +414,12 @@ void recirculationController::updateState()
     // Always update water parameters
     addVolKh2o(__VolCh20-h2oLiters);
     __VolCh20 = h2oLiters; // Liters missed from water
-    
+
     // Liters missed from nutrition
     if(__Go[SOLUTION_MAKER] || __FSol){
       __VolCnut = sMLiters;
     }
-    else{ 
+    else{
       if(!__SolPump){
         addVolKnut(__SolLiters-nutLiters);
         __SolLiters = nutLiters;
@@ -423,8 +430,93 @@ void recirculationController::updateState()
         __SolLiters = __Level[6]->getVolume()-__Level[6]->getMinVolume();
       }
     }
-    
+
   }
+
+void recirculationController::checkAlert() {
+  // Check once per minute
+  if (__AlertTime-millis()>60000) {
+    __AlertTime = millis();
+
+    // Check InPump
+    if(__InPump) {
+      float in = __Level[0]->getVolume();
+      if (in >= __CompareInVol) { __alertPumpIn++; }
+      else { __CompareInVol = in; }
+      if(__alertPumpIn>5){
+        // ALERT
+      }
+    }
+    else if(__alertPumpIn!=0) {
+      if(__alertPumpIn>5){
+        // STOP ALERT
+      }
+      __alertPumpIn = 0;
+      __CompareInVol = 0;
+    }
+
+    // Check OutPump
+    if(__OutPump) {
+      float out = __Level[__Out+1]->getVolume();
+      if (out >= __CompareOutVol) { __alertPumpOut++; }
+      else { __CompareOutVol = out; }
+      if(__alertPumpOut>5){
+        // ALERT
+      }
+    }
+    else if(__alertPumpOut!=0) {
+      if(__alertPumpOut>5){
+        // STOP ALERT
+      }
+      __alertPumpOut = 0;
+      __CompareInVol = 0;
+    }
+
+    // Check SolPump
+    if(__SolPump) {
+      float sol = __Level[6]->getVolume();
+      if (sol >= __CompareSolVol) { __alertSolPump++; }
+      else { __CompareSolVol = sol }
+      if(__alertSolPump>5){
+        // ALERT
+      }
+    }
+    else if(__alertSolPump!=0) {
+      if(__alertSolPump>5){
+        // STOP ALERT
+      }
+      __alertSolPump = 0;
+      __CompareSolVol = 0;
+    }
+
+    // Check flow from municipal line
+    if(__Fh2o || __FSol) {
+      if (__CompareH2OVol == __H2OVol) {
+        __alertFlowSensor = HIGH;
+        // ALERT
+      }
+      else { __CompareH2OVol = __H2OVol; }
+    }
+    else if(__CompareH2OVol!=0) {
+      __CompareH2OVol = 0;
+      if(__alertFlowSensor) {
+        // STOP ALERT
+      }
+    }
+  }
+
+  // Check ultrasonic sensor consistency in measurements
+  bool isOk = false;
+  for(int i=0; i<MAX_NUMBER_US_SENSOR; i++){
+    float comp = __Level[i]->getVolume();
+    if(comp>__CompareLevel[i]) {
+
+    }
+    else {
+      
+    }
+  }
+}
 
 void recirculationController::run(bool check, bool sensorState)
   { // Move In when level in recirculation tank is High and Input Pump is off
@@ -457,9 +549,9 @@ void recirculationController::run(bool check, bool sensorState)
           else if(i==SOLUTION_MAKER){toWhere = "solution Maker";}
         }
       }
-      printAction(F("Move Out finished. "), String(__OutLiters), 
+      printAction(F("Move Out finished. "), String(__OutLiters),
       F(" liters were move to "), toWhere, 0);
-      
+
       if(__Wait4Fill==1){ // Now fill sMaker
         fillSol(__WaitLiters); // Fill sMaker from outside
         printAction(__WaitLiters, F("water line"), F("solution maker"), 0);
