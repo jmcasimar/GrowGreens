@@ -164,14 +164,14 @@ class Grower:
         while(time()-actualTime<timeout): continue
         
     def checkDayDirectory(self):
-        if os.path.exists('data/{}-{}-{}'.format(self.day, self.month, self.year)): return True
+        if os.path.exists('data/{}-{}-{}'.format(self.year, self.month, self.day)): return True
         else: return False
         
     def createDayDirectory(self):
-        os.makedirs('data/{}-{}-{}'.format(self.day, self.month, self.year))
-        os.makedirs('data/{}-{}-{}/sequence'.format(self.day, self.month, self.year))
-        os.makedirs('data/{}-{}-{}/thermal'.format(self.day, self.month, self.year))
-        os.makedirs('data/{}-{}-{}/manual'.format(self.day, self.month, self.year))
+        os.makedirs('data/{}-{}-{}'.format(self.year, self.month, self.day))
+        os.makedirs('data/{}-{}-{}/sequence'.format(self.year, self.month, self.day))
+        os.makedirs('data/{}-{}-{}/thermal'.format(self.year, self.month, self.day))
+        #os.makedirs('data/{}-{}-{}/manual'.format(self.year, self.month, self.day))
 
     def getDateFormat(self):
         now = datetime.now()
@@ -185,8 +185,8 @@ class Grower:
         return getIPaddr()
     
     def photoPath(self, longPath = True):
-        if longPath: return "data/{}-{}-{}".format(self.day, self.month, self.year) # Return long folder name
-        else: return "{}-{}-{}".format(self.day, self.month, self.year) # Return short folder name
+        if longPath: return "data/{}-{}-{}".format(self.year, self.month, self.day) # Return long folder name
+        else: return "{}-{}-{}".format(self.year, self.month, self.day) # Return short folder name
 
     def cam_begin(self):
         try:
@@ -241,13 +241,13 @@ class Grower:
             if(self.thermalCam1!=None and self.thermalCam2!=None):
                 thermalJoin = concatenate((thermalPixels1, thermalPixels2), axis=0)
                 savetxt("data/{}-{}-{}/thermal/{}.csv".format(
-                    self.day, self.month, self.year, name), thermalJoin, fmt="%.2f", delimiter=",")
+                    self.year, self.month, self.day, name), thermalJoin, fmt="%.2f", delimiter=",")
             elif(self.thermalCam1!=None):
                 savetxt("data/{}-{}-{}/thermal/{}.csv".format(
-                    self.day, self.month, self.year, name), thermalPixels1, fmt="%.2f", delimiter=",")
+                    self.year, self.month, self.day, name), thermalPixels1, fmt="%.2f", delimiter=",")
             else:
                 savetxt("data/{}-{}-{}/thermal/{}.csv".format(
-                    self.day, self.month, self.year, name), thermalPixels2, fmt="%.2f", delimiter=",")
+                    self.year, self.month, self.day, name), thermalPixels2, fmt="%.2f", delimiter=",")
             
             self.wait(0.1) # Wait 100ms
             self.turnOff(self.IR)
@@ -290,7 +290,7 @@ class Grower:
             self.wait(2) # Wait 2 seconds
             if(Photo):
                 self.cam.capture("data/{}-{}-{}/manual/{}.png".format(
-                self.day, self.month, self.year, name), "png") # Take photo and give it a name
+                self.year, self.month, self.day, name), "png") # Take photo and give it a name
             if(Thermal):
                 self.thermalPhoto("{}".format(name)) #get thermal cam readings
             
@@ -317,7 +317,7 @@ class Grower:
             #self.wait(2) # Wait 2 seconds
             if(self.camEnable):
                 self.cam.capture("data/{}-{}-{}/sequence/{}.png".format(
-                    self.day, self.month, self.year, name), "png") # Take photo and give it a name
+                    self.year, self.month, self.day, name), "png") # Take photo and give it a name
                 totalShoots += 2
                 
             if(thermalStatus):
